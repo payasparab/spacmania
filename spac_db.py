@@ -4,10 +4,6 @@ import os
 import selenium
 
 
-from ib_insync.util import df as df_util
-from ib_insync import util
-from ib_insync import IB
-from ib_insync import Contract, Stock, MarketOrder, Future
 
 
 
@@ -17,11 +13,11 @@ class SPAC_DB:
         ''' 
         Pull in raw data that makes up
         '''
-        self.raw_data_root = os.path.dirname(os.path.abspath(__file__)) + '\\spac_data\\'
-        self.unmerged = pd.read_csv(self.raw_data_root + 'unannounced_merger_spacs.csv')
-        self.pending = pd.read_csv(self.raw_data_root + 'pending_merger_spacs.csv')
-        self.public_spacs = pd.read_csv(self.raw_data_root + 'public_merged_spacs.csv')
-
+        self.raw_data_root = os.path.dirname(os.path.abspath(__file__)) + '\\data\\'
+        self.unmerged = pd.read_csv(self.raw_data_root + 'spac_data\\unannounced_merger_spacs.csv')
+        self.pending = pd.read_csv(self.raw_data_root + 'spac_data\\pending_merger_spacs.csv')
+        self.public_spacs = pd.read_csv(self.raw_data_root + 'spac_data\\public_merged_spacs.csv')
+        self.price_data = pd.read_csv(self.raw_data_root + 'price_data.csv').set_index(['date', 'ticker']).sort_index()
         
     def update_csvs(self):
         '''
@@ -35,4 +31,7 @@ class SPAC_DB:
     def create_returns_series(self): 
         '''
         
+        
         '''
+        pass
+        
