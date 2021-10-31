@@ -28,10 +28,6 @@ class SPAC_DB:
         publically_listed_spacs = 'https://stockmarketmba.com/listofcompaniesthathavemergedwithaspac.php'
 
         
-    def create_returns_series(self): 
-        '''
-        
-        
-        '''
-        pass
-        
+if __name__ == '__main__':
+    sdb = SPAC_DB()
+
