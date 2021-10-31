@@ -11,7 +11,7 @@ class SPAC_DB:
     def __init__(self):
         
         ''' 
-        Pull in raw data that makes up
+        Pull in raw data that makes up the key components of the database
         '''
         self.raw_data_root = os.path.dirname(os.path.abspath(__file__)) + '\\data\\'
         
@@ -25,6 +25,7 @@ class SPAC_DB:
         
         self.pending = pd.read_csv(self.raw_data_root + 'spac_data\\pending_merger_spacs.csv')
         self.pending = df_cleaner(self.pending)
+        
         
         def parse_proposed_merger(proposed_merger_col):
             '''
@@ -64,6 +65,20 @@ class SPAC_DB:
             )
 
             return date, company
+
+        date, company = parse_proposed_merger(self.pending['poposed_merger'])
+        # TODO: Needs manual override + Error handling
+        self.pending['merger_proposed_date'] = date
+        self.pending['merger_propsed_company'] = company
+        self.pending['shares_outstanding'] = self.pending.shares_outstanding.apply(
+            str_num_cleaner
+        )
+        self.pending['average_trading_volume'] = self.pending.average_trading_volume.apply(
+            str_num_cleaner
+        )
+        
+
+
 
 
 
