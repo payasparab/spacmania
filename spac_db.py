@@ -77,15 +77,16 @@ class SPAC_DB:
             str_num_cleaner
         )
         
-
-
-
-
-
-
-
         self.public_spacs = pd.read_csv(self.raw_data_root + 'spac_data\\public_merged_spacs.csv')
         self.public_spacs = df_cleaner(self.public_spacs)
+        self.public_spacs['ipo_date'] = pd.to_datetime(self.public_spacs)
+        self.public_spacs['market_cap'] = pd.to_datetime()
+        self.public_spacs['shares_outstanding'] = self.public_spacs.shares_outstanding.apply(
+            str_num_cleaner
+        )
+        self.public_spacs['average_trading_volume'] = self.average_trading_volume.apply(
+            str_num_cleaner
+        )
         
         self.price_data = pd.read_csv(self.raw_data_root + 'price_data.csv').set_index(['date', 'ticker']).sort_index()
         self.price_data['rets'] = self.price_data.unstack().pct_change(fill_method=None).stack()
