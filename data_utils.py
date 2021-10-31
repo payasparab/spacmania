@@ -18,4 +18,10 @@ def df_cleaner(df):
     df.columns = list(map(pd_name_cleaner, list(df.columns)))
 
     return df 
+
+
+def str_num_cleaner(num):
+    num = num.replace('$', '')
+    num = num.replace(',', '')
+    return float(num)
     
