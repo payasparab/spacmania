@@ -21,7 +21,6 @@ class SPAC_DB:
         self.unmerged['ipo_date'] = pd.to_datetime(self.unmerged.ipo_date)    
         self.unmerged['market_cap'] = self.unmerged.market_cap.apply(str_num_cleaner)
         self.unmerged['shares_outstanding'] = self.unmerged.shares_outstanding.apply(str_num_cleaner)
-        self.unmerged.drop(columns=[''], inplace=True)
         
         self.pending = pd.read_csv(self.raw_data_root + 'spac_data\\pending_merger_spacs.csv')
         self.pending = df_cleaner(self.pending)
@@ -66,7 +65,7 @@ class SPAC_DB:
 
             return date, company
 
-        date, company = parse_proposed_merger(self.pending['poposed_merger'])
+        date, company = parse_proposed_merger(self.pending['proposed_merger'])
         # TODO: Needs manual override + Error handling
         self.pending['merger_proposed_date'] = date
         self.pending['merger_propsed_company'] = company
@@ -79,8 +78,10 @@ class SPAC_DB:
         
         self.public_spacs = pd.read_csv(self.raw_data_root + 'spac_data\\public_merged_spacs.csv')
         self.public_spacs = df_cleaner(self.public_spacs)
-        self.public_spacs['ipo_date'] = pd.to_datetime(self.public_spacs)
-        self.public_spacs['market_cap'] = pd.to_datetime()
+        # self.public_spacs['ipo_date'] = pd.to_datetime(self.public_spacs)
+        self.public_spacs['market_cap'] = self.public_spacs.market_cap.apply(
+            str_num_cleaner
+        )
         self.public_spacs['shares_outstanding'] = self.public_spacs.shares_outstanding.apply(
             str_num_cleaner
         )
