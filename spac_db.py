@@ -49,20 +49,20 @@ class SPAC_DB:
                     r"(?=with)(.*)", merger_desc
                 )
                 if comp_matches:
-                    return comp_matches[0][5:]
+                    return comp_matches[0][5:].split(',')[0]
                 else: 
                     return np.nan
             
-            date = proposed_merger_col.apply(
-                lambda x: process_date(x)
+            date = pd.to_datetime(
+                proposed_merger_col.apply(
+                    lambda x: process_date(x)
+                )
             )
-
-            
 
             company = proposed_merger_col.apply(
-                lambda x: [0][5:]
+                lambda x: process_company(x)
             )
-            
+
             return date, company
 
 
