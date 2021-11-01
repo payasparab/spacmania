@@ -8,7 +8,7 @@ from data_utils import df_cleaner
 from data_utils import str_num_cleaner
 
 class SPAC_DB:
-    def __init__(self):
+    def __init__(self, volume_windows=[5, 21, 63]):
         
         ''' 
         Pull in raw data that makes up the key components of the database
@@ -91,14 +91,17 @@ class SPAC_DB:
         
         self.price_data = pd.read_csv(self.raw_data_root + 'price_data.csv')
         self.price_data['date'] = pd.to_datetime(self.price_data.date)
-        self.price_data['rets'] = self.price_data.unstack().pct_change(fill_method=None).stack()
         self.price_data = self.price_data.set_index(['date', 'ticker']).sort_index()
-
-
+        self.price_data['rets'] = self.price_data.unstack().pct_change(fill_method=None).stack()
 
         self.volume_data = pd.read_csv(self.raw_data_root + 'volume_data.csv')
-        self.volume_data['date'] = pd.to_datetime(self.price_data.date)
+        self.volume_data['date'] = pd.to_datetime(self.volume_data.date)
         self.volume_data = self.volume_data.set_index(['date', 'ticker']).sort_index()
+        for vw in volume_windows:
+            _name = '{}_ewm_volume'.format(vw)
+            _series = sdb.volume_data.unstack().ewm(span=vw, min_periods=np.round(vw/3)).mean().stack()
+            self.volume_data[_name] = _series
+        
 
 
     def create_master_db(self):
@@ -116,9 +119,20 @@ class SPAC_DB:
             > industry 
             > ipo_date
         '''
-        master_db = self.price_data.join(self.volume_data)
+        # Combine volume and price data
+        master_db = self.price_data.join(self.volume_data).reset_index()
+
+        # Combine unmerged #
+        um = self.unmerged[['name', 'symbol', 'ipo_book_value', 'shares_outstanding']]
+        um = um.rename(columns={'symbol': 'ticker'})
+        um['status'] = 'unmerged'
+        
+
+        
 
 
+
+        self.master_db = master_db
 
 
     def update_csvs(self):
