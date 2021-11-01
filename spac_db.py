@@ -14,7 +14,8 @@ class SPAC_DB:
         Pull in raw data that makes up the key components of the database
         '''
         self.raw_data_root = os.path.dirname(os.path.abspath(__file__)) + '\\data\\'
-        
+        self.volume_windows = volume_windows
+
         # Pull in unmerged SPAC data - just financial institution #
         self.unmerged = pd.read_csv(self.raw_data_root + 'spac_data\\unannounced_merger_spacs.csv')
         self.unmerged = df_cleaner(self.unmerged)
@@ -97,7 +98,7 @@ class SPAC_DB:
         self.volume_data = pd.read_csv(self.raw_data_root + 'volume_data.csv')
         self.volume_data['date'] = pd.to_datetime(self.volume_data.date)
         self.volume_data = self.volume_data.set_index(['date', 'ticker']).sort_index()
-        for vw in volume_windows:
+        for vw in self.volume_windows:
             _name = '{}_ewm_volume'.format(vw)
             _series = sdb.volume_data.unstack().ewm(span=vw, min_periods=np.round(vw/3)).mean().stack()
             self.volume_data[_name] = _series
@@ -119,16 +120,25 @@ class SPAC_DB:
             > industry 
             > ipo_date
         '''
-        # Combine volume and price data
-        master_db = self.price_data.join(self.volume_data).reset_index()
+        # Combine volume and price data to map to 3 datasets
+        price_volume = self.price_data.join(self.volume_data).reset_index()
 
         # Combine unmerged #
-        um = self.unmerged[['name', 'symbol', 'ipo_book_value', 'shares_outstanding']]
+        um = self.unmerged[['name', 'symbol', 'ipo_book_value', 'shares_outstanding', 'ipo_date']]
         um = um.rename(columns={'symbol': 'ticker'})
-        um['status'] = 'unmerged'
-        
+        um = price_volume.merge(um, on='ticker')
+        um['price_to_book'] = um.adjClose / um.ipo_book_value
+        um['market_cap'] = um.adjClose * um.shares_outstanding
+        um['days_since_ipo'] = (um.date - um.ipo_date).dt.days
+        um = um[(um.days_since_ipo >= 0)] # Filter stocks that would not have been tradable
+        um = um.set_index(['date', 'ticker']).sort_index()
 
-        
+        # Combine Pending Merger #
+        pend = self.pending[[
+            'symbol', 'name', 'shares_outstanding', 
+            'merger_proposed_date', 
+        ]]
+        pend = pend.rename(columns={'symbol': 'ticker'})
 
 
 
