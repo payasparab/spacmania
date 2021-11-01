@@ -78,25 +78,45 @@ class SPAC_DB:
         
         self.public_spacs = pd.read_csv(self.raw_data_root + 'spac_data\\public_merged_spacs.csv')
         self.public_spacs = df_cleaner(self.public_spacs)
-        # self.public_spacs['ipo_date'] = pd.to_datetime(self.public_spacs)
+        self.public_spacs['ipo_date'] = pd.to_datetime(self.public_spacs.ipo_date)
         self.public_spacs['market_cap'] = self.public_spacs.market_cap.apply(
             str_num_cleaner
         )
         self.public_spacs['shares_outstanding'] = self.public_spacs.shares_outstanding.apply(
             str_num_cleaner
         )
-        self.public_spacs['average_trading_volume'] = self.average_trading_volume.apply(
+        self.public_spacs['average_trading_volume'] = self.public_spacs.average_trading_volume.apply(
             str_num_cleaner
         )
         
         self.price_data = pd.read_csv(self.raw_data_root + 'price_data.csv').set_index(['date', 'ticker']).sort_index()
         self.price_data['rets'] = self.price_data.unstack().pct_change(fill_method=None).stack()
 
+        self.volume_data = pd.read_csv(self.raw_data_root + 'volume_data.csv').set_index(['date', 'ticker']).sort_index()
+
+    def create_master_db(self):
+        '''
+        Code to combine the preloaded SPAC information and price information to create
+        a time series indexed by date/ticker and key information regarding. 
+
+        Contains: 
+            > date
+            > ticker
+            > price
+            > 1-day returns
+            > trading volume
+
+            > industry 
+            
+            > 
+        '''
+
 
     def update_csvs(self):
         '''
         Method that pulls web pages links and updates csv files in the spac_data root
         '''
+        #TODO: Not super urgent, but necessary for end-to-end
         unpending_merger_link = 'https://stockmarketmba.com/listofspacswithoutapendingmerger.php'
         pending_merger_link = 'https://stockmarketmba.com/pendingspacmergers.php'
         publically_listed_spacs = 'https://stockmarketmba.com/listofcompaniesthathavemergedwithaspac.php'
