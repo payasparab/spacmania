@@ -89,10 +89,17 @@ class SPAC_DB:
             str_num_cleaner
         )
         
-        self.price_data = pd.read_csv(self.raw_data_root + 'price_data.csv').set_index(['date', 'ticker']).sort_index()
+        self.price_data = pd.read_csv(self.raw_data_root + 'price_data.csv')
+        self.price_data['date'] = pd.to_datetime(self.price_data.date)
         self.price_data['rets'] = self.price_data.unstack().pct_change(fill_method=None).stack()
+        self.price_data = self.price_data.set_index(['date', 'ticker']).sort_index()
 
-        self.volume_data = pd.read_csv(self.raw_data_root + 'volume_data.csv').set_index(['date', 'ticker']).sort_index()
+
+
+        self.volume_data = pd.read_csv(self.raw_data_root + 'volume_data.csv')
+        self.volume_data['date'] = pd.to_datetime(self.price_data.date)
+        self.volume_data = self.volume_data.set_index(['date', 'ticker']).sort_index()
+
 
     def create_master_db(self):
         '''
@@ -107,9 +114,11 @@ class SPAC_DB:
             > trading volume
 
             > industry 
-            
-            > 
+            > ipo_date
         '''
+        master_db = self.price_data.join(self.volume_data)
+
+
 
 
     def update_csvs(self):
