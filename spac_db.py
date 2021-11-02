@@ -100,11 +100,17 @@ class SPAC_DB:
         # Save Key Metadata from Price Data #
         self.all_tickers = list(self.price_data.index.get_level_values('ticker').unique())
         
+        # Save where the Adjusted Price Data Starts
         tseries_start = {}
         for _tick in self.all_tickers:
             _start = self.price_data.xs(_tick, level='ticker').index.min()
             tseries_start[_tick] = _start
-        self.tseries_start = tseries_start
+        self.tseries_start = pd.DataFrame(
+            index = tseries_start.keys(), 
+            data = tseries_start.values(), 
+            columns = ['start_date']
+        )
+        self.tseries_start.index.name = 'ticker'
 
         
         self.volume_data = pd.read_csv(self.raw_data_root + 'volume_data.csv')
@@ -154,7 +160,11 @@ class SPAC_DB:
         ]]
         pend = pend.rename(columns={'symbol': 'ticker'})
         pend = price_volume.merge(pend, on='ticker')
-
+        pend = pend.merge(self.tseries_start, on='ticker')
+        pend['days_since_start'] = (pend.date - pend.start_date).dt.days
+        _merge_announce = (pend.date - pend.merger_proposed_date).dt.days
+        _merge_announce[_merge_announce < 0] = 0 #adjustment to prevent lookahead bias
+        pend['days_since_merger_announced'] = _merge_announce 
 
         self.master_db = master_db
 
