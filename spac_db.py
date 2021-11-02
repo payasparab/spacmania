@@ -1,3 +1,4 @@
+from datetime import date
 from pandas import tseries
 import requests
 import pandas as pd
@@ -8,8 +9,16 @@ import re
 from data_utils import df_cleaner
 from data_utils import str_num_cleaner
 
+date_windows = [5, 21, 63]
+
 class SPAC_DB:
-    def __init__(self, volume_windows=[5, 21, 63]):
+    def __init__(
+        self, 
+        volume_windows= date_windows, 
+        momentum_windows = date_windows,
+        vol_windows = date_windows, 
+        corr_windows = date_windows,
+    ):
         
         ''' 
         Pull in raw data that makes up the key components of the database
@@ -120,9 +129,6 @@ class SPAC_DB:
             _name = '{}_ewm_volume'.format(vw)
             _series = self.volume_data.volume.unstack().ewm(span=vw, min_periods=np.round(vw/3)).mean().stack()
             self.volume_data[_name] = _series
-    
-
-        # Key metadata
        
 
     def create_master_db(self):
@@ -143,7 +149,7 @@ class SPAC_DB:
         # Combine volume and price data to map to 3 datasets
         price_volume = self.price_data.join(self.volume_data).reset_index()
 
-        # Combine unmerged #
+        # Unmerged SPACS Data #
         um = self.unmerged[['name', 'symbol', 'ipo_book_value', 'shares_outstanding', 'ipo_date']]
         um = um.rename(columns={'symbol': 'ticker'})
         um = price_volume.merge(um, on='ticker')
@@ -153,7 +159,7 @@ class SPAC_DB:
         um = um[(um.days_since_ipo >= 0)] # Filter stocks that would not have been tradable
         um = um.set_index(['date', 'ticker']).sort_index()
 
-        # Combine Pending Merger #
+        # Pending Merger Data #
         pend = self.pending[[
             'symbol', 'name', 'shares_outstanding', 
             'merger_proposed_date', 
@@ -165,8 +171,20 @@ class SPAC_DB:
         _merge_announce = (pend.date - pend.merger_proposed_date).dt.days
         _merge_announce[_merge_announce < 0] = 0 #adjustment to prevent lookahead bias
         pend['days_since_merger_announced'] = _merge_announce 
+        pend = pend.set_index(['date', 'ticker']).sort_index()
 
-        self.master_db = master_db
+
+        ps = self.public_spacs[[
+            'symbol', 'name', 'ipo_date', 
+            'industry', 'shares_outstanding'
+        ]]
+        ps = ps.rename(columns={'symbol': 'ticker'})
+        ps = price_volume.merge(ps, on='ticker')
+        ps = ps.merge(self.tseries_start, on='ticker')
+
+
+
+        
 
 
     def update_csvs(self):
