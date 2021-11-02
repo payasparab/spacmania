@@ -1,3 +1,4 @@
+from pandas import tseries
 import requests
 import pandas as pd
 import numpy as np
@@ -90,20 +91,33 @@ class SPAC_DB:
             str_num_cleaner
         )
         
+        # Pull and Process Price Data #
         self.price_data = pd.read_csv(self.raw_data_root + 'price_data.csv')
         self.price_data['date'] = pd.to_datetime(self.price_data.date)
         self.price_data = self.price_data.set_index(['date', 'ticker']).sort_index()
         self.price_data['rets'] = self.price_data.unstack().pct_change(fill_method=None).stack()
 
+        # Save Key Metadata from Price Data #
+        self.all_tickers = list(self.price_data.index.get_level_values('ticker').unique())
+        
+        tseries_start = {}
+        for _tick in self.all_tickers:
+            _start = self.price_data.xs(_tick, level='ticker').index.min()
+            tseries_start[_tick] = _start
+        self.tseries_start = tseries_start
+
+        
         self.volume_data = pd.read_csv(self.raw_data_root + 'volume_data.csv')
         self.volume_data['date'] = pd.to_datetime(self.volume_data.date)
         self.volume_data = self.volume_data.set_index(['date', 'ticker']).sort_index()
         for vw in self.volume_windows:
             _name = '{}_ewm_volume'.format(vw)
-            _series = sdb.volume_data.unstack().ewm(span=vw, min_periods=np.round(vw/3)).mean().stack()
+            _series = self.volume_data.volume.unstack().ewm(span=vw, min_periods=np.round(vw/3)).mean().stack()
             self.volume_data[_name] = _series
-        
+    
 
+        # Key metadata
+       
 
     def create_master_db(self):
         '''
@@ -139,7 +153,7 @@ class SPAC_DB:
             'merger_proposed_date', 
         ]]
         pend = pend.rename(columns={'symbol': 'ticker'})
-
+        pend = price_volume.merge(pend, on='ticker')
 
 
         self.master_db = master_db
