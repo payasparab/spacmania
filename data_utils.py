@@ -27,4 +27,21 @@ def str_num_cleaner(num):
     num = num.replace('$', '')
     num = num.replace(',', '')
     return float(num)
-    
+
+
+def calc_momentum(df, window, risk_adjusted=True):
+    '''
+    Args: 
+        - df : pd.DF :
+            > index : Multiindex : ('date', 'ticker')
+            > columns : Series : rets : returns from equity
+        - window : int : window to calculate back momentum
+        - risk_adjusted : bool : 
+            > True->Use Rolling Sharpe ratio
+            > False-> Use Excess returns 
+    '''
+    if risk_adjusted: 
+        pass
+    else: 
+        pass
+        
