@@ -184,7 +184,9 @@ class SPAC_DB:
         ps = ps.rename(columns={'symbol': 'ticker'})
         ps = price_volume.merge(ps, on='ticker')
         ps = ps.merge(self.starting_df, on='ticker')
-
+        ps['days_since_start'] = (ps.date - ps.start_date).dt.days
+        ps['days_since_ipo'] = (ps.date - ps.ipo_date).dt.days
+        ps = ps.set_index(['date', 'ticker']).sort_index()
 
 
         
