@@ -105,22 +105,25 @@ class SPAC_DB:
         self.price_data['date'] = pd.to_datetime(self.price_data.date)
         self.price_data = self.price_data.set_index(['date', 'ticker']).sort_index()
         self.price_data['rets'] = self.price_data.unstack().pct_change(fill_method=None).stack()
+    
 
         # Save Key Metadata from Price Data #
         self.all_tickers = list(self.price_data.index.get_level_values('ticker').unique())
         
         # Save where the Adjusted Price Data Starts
         tseries_start = {}
+        initial_price = {}
         for _tick in self.all_tickers:
             _start = self.price_data.xs(_tick, level='ticker').index.min()
+            _price = self.price_data.xs(_tick, level='ticker').loc[_start].iloc[0]
             tseries_start[_tick] = _start
-        self.tseries_start = pd.DataFrame(
-            index = tseries_start.keys(), 
-            data = tseries_start.values(), 
-            columns = ['start_date']
-        )
-        self.tseries_start.index.name = 'ticker'
-
+            initial_price[_tick] = _price
+        starting_data = [tseries_start, initial_price]
+        starting_df = pd.DataFrame(starting_data).T
+        starting_df.columns = ['start_date', 'init_adj_price']
+        starting_df.index.name = 'ticker'
+        self.starting_df = starting_df
+        
         
         self.volume_data = pd.read_csv(self.raw_data_root + 'volume_data.csv')
         self.volume_data['date'] = pd.to_datetime(self.volume_data.date)
@@ -166,7 +169,7 @@ class SPAC_DB:
         ]]
         pend = pend.rename(columns={'symbol': 'ticker'})
         pend = price_volume.merge(pend, on='ticker')
-        pend = pend.merge(self.tseries_start, on='ticker')
+        pend = pend.merge(self.starting_df, on='ticker')
         pend['days_since_start'] = (pend.date - pend.start_date).dt.days
         _merge_announce = (pend.date - pend.merger_proposed_date).dt.days
         _merge_announce[_merge_announce < 0] = 0 #adjustment to prevent lookahead bias
@@ -180,7 +183,7 @@ class SPAC_DB:
         ]]
         ps = ps.rename(columns={'symbol': 'ticker'})
         ps = price_volume.merge(ps, on='ticker')
-        ps = ps.merge(self.tseries_start, on='ticker')
+        ps = ps.merge(self.starting_df, on='ticker')
 
 
 
