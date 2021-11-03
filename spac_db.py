@@ -187,8 +187,6 @@ class SPAC_DB:
         ps['days_since_start'] = (ps.date - ps.start_date).dt.days
         ps['days_since_ipo'] = (ps.date - ps.ipo_date).dt.days
         ps = ps.set_index(['date', 'ticker']).sort_index()
-
-
         
 
 
