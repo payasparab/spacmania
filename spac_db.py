@@ -35,6 +35,12 @@ class SPAC_DB:
         
         self.pending = pd.read_csv(self.raw_data_root + 'spac_data\\pending_merger_spacs.csv')
         self.pending = df_cleaner(self.pending)
+
+        self.key_db = {
+            'unmerged': None, 
+            'pending' : None, 
+            'completed': None,
+        }
         
         
         def parse_proposed_merger(proposed_merger_col):
@@ -134,7 +140,7 @@ class SPAC_DB:
             self.volume_data[_name] = _series
        
 
-    def create_master_db(self):
+    def create_key_db(self):
         '''
         Code to combine the preloaded SPAC information and price information to create
         a time series indexed by date/ticker and key information regarding. 
@@ -161,7 +167,8 @@ class SPAC_DB:
         um['days_since_ipo'] = (um.date - um.ipo_date).dt.days
         um = um[(um.days_since_ipo >= 0)] # Filter stocks that would not have been tradable
         um = um.set_index(['date', 'ticker']).sort_index()
-
+        self.key_db['unmerged'] = um
+        
         # Pending Merger Data #
         pend = self.pending[[
             'symbol', 'name', 'shares_outstanding', 
@@ -170,12 +177,13 @@ class SPAC_DB:
         pend = pend.rename(columns={'symbol': 'ticker'})
         pend = price_volume.merge(pend, on='ticker')
         pend = pend.merge(self.starting_df, on='ticker')
+        pend['market_cap'] = pend.adjClose * pend.shares_outstanding
         pend['days_since_start'] = (pend.date - pend.start_date).dt.days
         _merge_announce = (pend.date - pend.merger_proposed_date).dt.days
         _merge_announce[_merge_announce < 0] = 0 #adjustment to prevent lookahead bias
         pend['days_since_merger_announced'] = _merge_announce 
         pend = pend.set_index(['date', 'ticker']).sort_index()
-
+        self.key_db['pending'] = pend 
 
         ps = self.public_spacs[[
             'symbol', 'name', 'ipo_date', 
@@ -184,10 +192,11 @@ class SPAC_DB:
         ps = ps.rename(columns={'symbol': 'ticker'})
         ps = price_volume.merge(ps, on='ticker')
         ps = ps.merge(self.starting_df, on='ticker')
+        ps['market_cap'] = ps.adjClose * ps.shares_outstanding
         ps['days_since_start'] = (ps.date - ps.start_date).dt.days
         ps['days_since_ipo'] = (ps.date - ps.ipo_date).dt.days
         ps = ps.set_index(['date', 'ticker']).sort_index()
-        
+        self.key_db['completed'] = ps
 
 
     def update_csvs(self):
