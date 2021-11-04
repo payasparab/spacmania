@@ -211,4 +211,5 @@ class SPAC_DB:
         
 if __name__ == '__main__':
     sdb = SPAC_DB()
+    sdb.create_key_db()
 
