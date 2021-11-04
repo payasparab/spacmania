@@ -111,7 +111,7 @@ class SPAC_DB:
         self.price_data['date'] = pd.to_datetime(self.price_data.date)
         self.price_data = self.price_data.set_index(['date', 'ticker']).sort_index()
         self.price_data['rets'] = self.price_data.unstack().pct_change(fill_method=None).stack()
-    
+        
 
         # Save Key Metadata from Price Data #
         self.all_tickers = list(self.price_data.index.get_level_values('ticker').unique())
