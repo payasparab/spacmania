@@ -162,7 +162,7 @@ class SPAC_DB:
         # Unmerged SPACS Data #
         um = self.unmerged[['name', 'symbol', 'ipo_book_value', 'shares_outstanding', 'ipo_date']]
         um = um.rename(columns={'symbol': 'ticker'})
-        um = price_volume.merge(um, on='ticker')
+        um = price_volume.copy().merge(um, on='ticker')
         um['price_to_book'] = um.adjClose / um.ipo_book_value
         um['market_cap'] = um.adjClose * um.shares_outstanding
         um['days_since_ipo'] = (um.date - um.ipo_date).dt.days
@@ -176,7 +176,7 @@ class SPAC_DB:
             'merger_proposed_date', 
         ]]
         pend = pend.rename(columns={'symbol': 'ticker'})
-        pend = price_volume.merge(pend, on='ticker')
+        pend = price_volume.copy().merge(pend, on='ticker')
         pend = pend.merge(self.starting_df, on='ticker')
         pend['market_cap'] = pend.adjClose * pend.shares_outstanding
         pend['days_since_start'] = (pend.date - pend.start_date).dt.days
@@ -191,7 +191,7 @@ class SPAC_DB:
             'industry', 'shares_outstanding'
         ]]
         ps = ps.rename(columns={'symbol': 'ticker'})
-        ps = price_volume.merge(ps, on='ticker')
+        ps = price_volume.copy().merge(ps, on='ticker')
         ps = ps.merge(self.starting_df, on='ticker')
         ps['market_cap'] = ps.adjClose * ps.shares_outstanding
         ps['days_since_start'] = (ps.date - ps.start_date).dt.days
@@ -199,6 +199,57 @@ class SPAC_DB:
         ps = ps.set_index(['date', 'ticker']).sort_index()
         self.key_db['completed'] = ps
 
+    def create_master_db(self):
+        master_db = self.price_data.join(self.volume_data).reset_index()
+        master_db = master_db.merge(self.starting_df, on='ticker', how='left')
+
+        ps = self.public_spacs[[
+            'symbol', 'name', 
+            'ipo_date', 'shares_outstanding'
+        ]]
+        ps = ps.rename(
+            columns={
+                'symbol': 'ticker', 
+                'ipo_date': 'merger_date'
+            }
+        )
+
+        um = self.unmerged[['symbol', 'shares_outstanding',
+                    'name', 'ipo_date'
+                ]]
+        um = um.rename(columns={
+            'symbol': 'ticker', 
+            'ipo_date': 'spac_offering_date'
+        })
+
+        pend = self.pending[[
+            'symbol', 'name', 'shares_outstanding', 
+            'merger_proposed_date', 
+        ]]
+        pend = pend.rename(columns={'symbol': 'ticker'})
+
+        key_spac_data = pd.concat([ps, um, pend])
+        master_db = master_db.merge(key_spac_data, on='ticker', how='left')
+
+
+
+
+        
+
+        master_db = master_db.merge(ps, on='ticker', how='left')
+
+
+
+
+        master_db['market_cap'] = master_db.shares_outstanding * master_db.adjClose
+
+        ps['days_since_start'] = (ps.date - ps.start_date).dt.days
+        ps['days_since_merger'] = (ps.date - ps.merger_date).dt.days
+
+
+        master_db = master_db.merge(ps, on='ticker', how='left')
+
+        self.master_db = master_db
 
     def update_csvs(self):
         '''
