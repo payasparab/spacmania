@@ -230,7 +230,7 @@ class SPAC_DB:
 
         key_spac_data = pd.concat([ps, um, pend])
         master_db = master_db.merge(key_spac_data, on='ticker', how='left')
-
+        
 
 
 
