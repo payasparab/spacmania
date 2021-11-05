@@ -137,6 +137,7 @@ class SPAC_DB:
         for vw in self.volume_windows:
             _name = '{}_ewm_volume'.format(vw)
             _series = self.volume_data.volume.unstack().ewm(span=vw, min_periods=np.round(vw/3)).mean().stack()
+            _series =(self.volume_data['volume'] / _series)
             self.volume_data[_name] = _series
        
 
