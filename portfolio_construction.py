@@ -7,5 +7,4 @@ def construct_naive_portfolio(weighted_by, freq, spac_types):
     freq : int : portfolio rebalancing period by trading days
 
     '''
-    pass
     
