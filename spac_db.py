@@ -1,4 +1,5 @@
 from datetime import date
+from numpy.lib.stride_tricks import _maybe_view_as_subclass
 from pandas import tseries
 import requests
 import pandas as pd
@@ -8,6 +9,7 @@ import re
 
 from data_utils import df_cleaner
 from data_utils import str_num_cleaner
+from data_utils import calc_momentum
 
 date_windows = [5, 21, 63]
 
@@ -25,6 +27,7 @@ class SPAC_DB:
         '''
         self.raw_data_root = os.path.dirname(os.path.abspath(__file__)) + '\\data\\'
         self.volume_windows = volume_windows
+        self.momentum_windows = momentum_windows
 
         # Pull in unmerged SPAC data - just financial institution #
         self.unmerged = pd.read_csv(self.raw_data_root + 'spac_data\\unannounced_merger_spacs.csv')
@@ -111,7 +114,11 @@ class SPAC_DB:
         self.price_data['date'] = pd.to_datetime(self.price_data.date)
         self.price_data = self.price_data.set_index(['date', 'ticker']).sort_index()
         self.price_data['rets'] = self.price_data.unstack().pct_change(fill_method=None).stack()
-        
+        for window in self.momentum_windows:
+            _mom = calc_momentum(self.price_data['adjClose'], window=window)
+            _name = _mom.columns[0]
+            self.price_data[_name] = _mom
+
 
         # Save Key Metadata from Price Data #
         self.all_tickers = list(self.price_data.index.get_level_values('ticker').unique())
@@ -213,6 +220,7 @@ class SPAC_DB:
                 'ipo_date': 'merger_date'
             }
         )
+        
 
         um = self.unmerged[['symbol', 'shares_outstanding',
                     'name', 'ipo_date'
@@ -221,33 +229,26 @@ class SPAC_DB:
             'symbol': 'ticker', 
             'ipo_date': 'spac_offering_date'
         })
+        
 
         pend = self.pending[[
             'symbol', 'name', 'shares_outstanding', 
             'merger_proposed_date', 
         ]]
         pend = pend.rename(columns={'symbol': 'ticker'})
+        pend = pend.dropna()
 
         key_spac_data = pd.concat([ps, um, pend])
         master_db = master_db.merge(key_spac_data, on='ticker', how='left')
-        
-
-
-
-        
-
-        master_db = master_db.merge(ps, on='ticker', how='left')
-
-
-
-
         master_db['market_cap'] = master_db.shares_outstanding * master_db.adjClose
+        master_db['total_return'] = ((master_db.adjClose/master_db.init_adj_price) - 1).astype('float')
 
-        ps['days_since_start'] = (ps.date - ps.start_date).dt.days
-        ps['days_since_merger'] = (ps.date - ps.merger_date).dt.days
-
-
-        master_db = master_db.merge(ps, on='ticker', how='left')
+        '''
+        master_db['days_since_start'] = (master_db.date - master_db.start_date).dt.days
+        master_db['days_since_merger'] = (master_db.date - master_db.merger_date).dt.days
+        master_db['days_since_merger_proposal'] = (master_db.date - master_db.merger_proposed_date).dt.days
+        master_db['days_since_spac_offering'] = (master_db.date - master_db.spac_offering_date).dt.days
+        '''
 
         self.master_db = master_db
 

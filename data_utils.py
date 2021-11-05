@@ -3,6 +3,8 @@ Data Standardization Tools for Consistency
 '''
 
 from datetime import date
+import numpy as np
+import pandas as pd
 
 
 def df_cleaner(df):
@@ -34,14 +36,31 @@ def calc_momentum(df, window, risk_adjusted=True):
     Args: 
         - df : pd.DF :
             > index : Multiindex : ('date', 'ticker')
-            > columns : Series : rets : returns from equity
+            > columns : Series : adjClose : adjClose Price
         - window : int : window to calculate back momentum
         - risk_adjusted : bool : 
             > True->Use Rolling Sharpe ratio
             > False-> Use Excess returns 
     '''
+    df = df.unstack()
+    df = df.shift(-1) # Prevent Lookahead Bias
+    
+    _name = '{}_mom'.format(window)
+
     if risk_adjusted: 
-        pass
+        voldf = (df.pct_change(1,fill_method=None).rolling(
+            window).std() * np.sqrt(251))
+    
+        df = df.pct_change(window, fill_method=None)
+        df = df.div(voldf)
+
+        _name += '_RA'
+        
     else: 
-        pass
+        df = df.pct_change(window, fill_method=None)
+    
+    df = df.stack().to_frame()
+    df.columns = [_name]
+    
+    return df
         
