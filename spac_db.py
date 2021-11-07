@@ -243,12 +243,16 @@ class SPAC_DB:
         master_db['market_cap'] = master_db.shares_outstanding * master_db.adjClose
         master_db['total_return'] = ((master_db.adjClose/master_db.init_adj_price) - 1).astype('float')
 
+
+        # 
         '''
         master_db['days_since_start'] = (master_db.date - master_db.start_date).dt.days
         master_db['days_since_merger'] = (master_db.date - master_db.merger_date).dt.days
         master_db['days_since_merger_proposal'] = (master_db.date - master_db.merger_proposed_date).dt.days
         master_db['days_since_spac_offering'] = (master_db.date - master_db.spac_offering_date).dt.days
         '''
+
+        master_db = master_db.drop('SPAQ', level='ticker') # Bug fix
         master_db = master_db.set_index(['date', 'ticker'])
         self.master_db = master_db
 
