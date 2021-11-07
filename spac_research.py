@@ -37,5 +37,7 @@ def calculate_post_ipo_sharpe(sdb=sdb, max_days=251):
     post_ipo_sharpe_table = pd.concat(post_ipo_sharpes, axis=1)
     post_ipo_sharpe_table = post_ipo_sharpe_table.clip(-3,3)
     return post_ipo_sharpe_table.mean(axis=1)
+
+
     
     
