@@ -47,9 +47,11 @@ class SPACTradeSimulator:
     def determine_trading_universe(self, trade_date):
         '''
         Find the trading universe between pre, pending, and completed SPACs on trade_date
-        Also, pull in historical data for each of these at that time
+        Also, pull in historical data for each of these at that time. 
+
+        
         '''
-        _universe = self.master_db(trade_date, level='date')
+        _universe = self.sdb.master_db(trade_date, level='date')
         
 
-    def 
+    def f
