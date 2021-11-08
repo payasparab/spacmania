@@ -1,11 +1,14 @@
 from datetime import date
-from numpy.lib.stride_tricks import _maybe_view_as_subclass
-from pandas import tseries
+from pandas.tseries.offsets import Day
 import requests
 import pandas as pd
 import numpy as np
 import os
 import re 
+import dask
+from dask import delayed
+from dask.diagnostics import ProgressBar
+
 
 from data_utils import df_cleaner
 from data_utils import str_num_cleaner
@@ -13,13 +16,14 @@ from data_utils import calc_momentum
 
 date_windows = [5, 21, 63]
 
+
 class SPAC_DB:
     def __init__(
         self, 
         volume_windows= date_windows, 
         momentum_windows = date_windows,
         vol_windows = date_windows, 
-        corr_windows = date_windows,
+        corr_window = 21,
     ):
         
         ''' 
@@ -28,6 +32,8 @@ class SPAC_DB:
         self.raw_data_root = os.path.dirname(os.path.abspath(__file__)) + '\\data\\'
         self.volume_windows = volume_windows
         self.momentum_windows = momentum_windows
+        self.vol_windows = vol_windows
+        self.corr_window = corr_window
 
         # Pull in unmerged SPAC data - just financial institution #
         self.unmerged = pd.read_csv(self.raw_data_root + 'spac_data\\unannounced_merger_spacs.csv')
@@ -43,6 +49,11 @@ class SPAC_DB:
             'unmerged': None, 
             'pending' : None, 
             'completed': None,
+        }
+
+        self.corr_matrices = {
+            # key - pd.Datetime 
+            # value - pd.DF : correlations on date            
         }
         
         
@@ -256,6 +267,47 @@ class SPAC_DB:
         master_db = master_db.set_index(['date', 'ticker'])
         self.master_db = master_db
 
+    def calculate_rolling_corrs(self): 
+        '''
+        Helper function to calculate rolling correlations
+
+        Desc: Generate
+
+        weighting : str : 
+            > uniform -> use pandas.rolling 
+
+        Outputs:
+
+            > saves rolling correlation windows to self.corr_matrices
+            > Needed for portfolio optimization/weighting
+        
+        '''
+        rets = self.master_db.rets
+        _corr_window = self.corr_window
+        _corr
+        dates = rets.index.get_level_values('date')
+        rets = rets.unstack().shift(-1)
+        
+        
+        corrs = []
+        for date in dates:
+            _corr = rets.loc[date - Day(self.corr_window) : date + Day(1)] 
+            _corr = dask.delayed(pd.DataFrame.corr)(_corr)
+            #_corr = dask.delayed(pd.DataFrame.stack)(_corr)
+            _corr = dask.delayed(pd.concat)([_corr], keys=[date], names=['date'])
+            _corr = dask.delayed(pd.Series.rename)(_corr, 'corr_{}d'.format(self.corr_window))
+            _corr = dask.delayed(pd.Series.to_frame)(_corr)
+            _corr = dask.delayed(pd.DataFrame.rename_axis)(_corr,
+                                                        ['date','ticker_1','ticker_2'])
+            corrs.append(_corr)
+
+        with ProgressBar():
+            corr_matrices = dask.compute(*corrs, scheduler='threads')
+
+
+        return corrs 
+
+
     def update_csvs(self):
         '''
         Method that pulls web pages links and updates csv files in the spac_data root
@@ -264,6 +316,7 @@ class SPAC_DB:
         unpending_merger_link = 'https://stockmarketmba.com/listofspacswithoutapendingmerger.php'
         pending_merger_link = 'https://stockmarketmba.com/pendingspacmergers.php'
         publically_listed_spacs = 'https://stockmarketmba.com/listofcompaniesthathavemergedwithaspac.php'
+
 
         
 if __name__ == '__main__':
