@@ -268,7 +268,7 @@ class SPAC_DB:
         master_db = master_db.set_index(['date', 'ticker'])
         self.master_db = master_db
 
-    def calculate_rolling_corrs(self): 
+    def create_rolling_corrs(self): 
         '''
         Helper function to calculate rolling correlations
 
