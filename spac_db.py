@@ -8,6 +8,7 @@ import re
 import dask
 from dask import delayed
 from dask.diagnostics import ProgressBar
+from tqdm import tqdm
 
 
 from data_utils import df_cleaner
@@ -284,27 +285,22 @@ class SPAC_DB:
         '''
         rets = self.master_db.rets
         _corr_window = self.corr_window
-        dates = rets.index.get_level_values('date')
+        dates = rets.index.get_level_values('date').unique()
         rets = rets.unstack().shift(-1)
         
-        
-        corrs = []
-        for date in dates:
+        # Calculate Rolling Correlations # 
+        corrs = {}
+        for date in tqdm(dates):
             _corr = rets.loc[date - Day(_corr_window) : date + Day(1)] 
             _corr = dask.delayed(pd.DataFrame.corr)(_corr)
-            #_corr = dask.delayed(pd.DataFrame.stack)(_corr)
-            _corr = dask.delayed(pd.concat)([_corr], keys=[date], names=['date'])
-            _corr = dask.delayed(pd.Series.rename)(_corr, 'corr_{}d'.format(_corr_window))
-            #_corr = dask.delayed(pd.Series.to_frame)(_corr)
-            #_corr = dask.delayed(pd.DataFrame.rename_axis)(_corr,
-            #                                           ['date','ticker_1','ticker_2'])
-            corrs.append(_corr)
+            corrs[date] = _corr
 
         with ProgressBar():
-            corr_matrices = dask.compute(*corrs, scheduler='threads')
+            corr_matrices = dask.compute(corrs, scheduler='threads')
 
+        corr_matrices = corr_matrices[0]
 
-        return corrs 
+        self.corr_matrices = corr_matrices
 
 
     def update_csvs(self):
