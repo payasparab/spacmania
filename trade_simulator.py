@@ -49,7 +49,7 @@ class SPACTradeSimulator:
         Find the trading universe between pre, pending, and completed SPACs on trade_date
         Also, pull in historical data for each of these at that time. 
 
-        Returns List of pd.DataFrame (len -> 3) cross sectioned on trade_date: 
+        Returns List of pd.DataFrame (len -> 3) cross sectioned on trade_date : 
             [   
                 merged_uni -> list of stock ticker with merger closed
                 proposed_uni -> list of stock ticker with merger announced
@@ -85,5 +85,5 @@ class SPACTradeSimulator:
 
         _merged_spac = _merg
 
-        
+        # Get Rid of duplicates
         
