@@ -263,9 +263,9 @@ class SPAC_DB:
         master_db['days_since_merger_proposal'] = (master_db.date - master_db.merger_proposed_date).dt.days
         master_db['days_since_spac_offering'] = (master_db.date - master_db.spac_offering_date).dt.days
         '''
-
-        master_db = master_db.drop('SPAQ', level='ticker') # Bug fix
+        
         master_db = master_db.set_index(['date', 'ticker'])
+        master_db = master_db.drop('SPAQ', level='ticker') # Bug fix
         self.master_db = master_db
 
     def create_rolling_corrs(self): 
