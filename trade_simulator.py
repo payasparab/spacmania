@@ -49,16 +49,17 @@ class SPACTradeSimulator:
         Find the trading universe between pre, pending, and completed SPACs on trade_date
         Also, pull in historical data for each of these at that time. 
 
-        Returns List of pd.DataFrame (len -> 3) cross sectioned on trade_date : 
+        Returns List of pd.DataFrame (len -> 3) ...
+            cross sectioned on trade_date (ticker indexed): 
             [   
                 merged_uni -> list of stock ticker with merger closed
                 proposed_uni -> list of stock ticker with merger announced
                 pending_uni -> list of stock ticker with no merger announced 
             ]
         '''
-        _universe = self.sdb.master_db(trade_date, level='date')
+        universe = self.sdb.master_db.xs(trade_date, level='date')
 
-        _universe = _universe[[
+        _universe = universe[[
             'merger_date', 
             'merger_proposed_date', 
             'spac_offering_date'
@@ -76,14 +77,20 @@ class SPACTradeSimulator:
         _proposed_uni = _proposed_uni[~_proposed_uni.index.isin(_pending_uni.index)]
         _pending_uni = _pending_uni[~_pending_uni.index.isin(_proposed_uni.index)]
 
-        e_msg_uni = 'Duplicated ticker in multi-universe'
+        e_msg_uni = 'Duplicated ticker in multi-index'
         assert len(_universe) == (
             len(_merged_uni) +
             len(_proposed_uni) +
             len(_pending_uni)
         ) , e_msg_uni
 
-        _merged_spac = _merg
-
+        _merged_spac = universe.loc[_merged_uni.index]
+        _proposed_spac = universe.loc[_proposed_uni.index]
+        _pending_spac = universe.loc[_pending_uni.index]
         # Get Rid of duplicates
+        return [
+            _merged_spac, 
+            _proposed_spac,
+            _pending_spac
+        ]
         
