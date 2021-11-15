@@ -16,9 +16,26 @@ class SPACTradeSimulator:
 
     '''
     def __init__(self):
-        self.pre_spac_allocation = 0.2
-        self.pending_spac_allocation = 0.4
-        self.post_spac_allocation = 0.4
+        self.pre_spac_allocation = 0.2 #TODO: parametrize
+        self.pending_spac_allocation = 0.4 #TODO: parametrize
+        self.post_spac_allocation = 0.4 #TODO: parametrize
+
+
+        '''
+        Types of portfolio allocation methods based on historical trading data: 
+
+            'naive' - equal weighted portfolio across trading universe in category
+            'volume_ewm' - 
+            'volume_pop' - 
+            'days_since_event' - 
+            'market_cap' - 
+
+        
+        '''
+        self.pre_spac_alloc_method = 
+        self.pending_spac_allocation = 
+
+
 
         self.leverage_ratio = 1.0
         self.pre_spac_allocation_lev = self.pre_spac_allocation * self.leverage_ratio
