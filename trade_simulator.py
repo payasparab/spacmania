@@ -27,13 +27,14 @@ class SPACTradeSimulator:
             'naive' - equal weighted portfolio across trading universe in category
             'volume_ewm' - 
             'volume_pop' - 
-            'days_since_event' - 
+            'days_since_event' - SS
             'market_cap' - 
 
         
         '''
         self.pre_spac_alloc_method = 
         self.pending_spac_allocation = 
+        self.p
 
 
 
